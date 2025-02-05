@@ -3,16 +3,19 @@ import { ref } from 'vue'
 
 const searchTerm = ref('')
 const results = ref([])
+const isLoading = ref(false)
 
 const performSearch = async () => {
   if (searchTerm.value.length > 2) {
+    isLoading.value = true
     try {
       const response = await fetch(`http://localhost:3000/api/search?q=${searchTerm.value}`)
-      console.log(response)
       const data = await response.json()
       results.value = data.results
     } catch (error) {
       console.error('Error fetching results:', error)
+    } finally {
+      isLoading.value = false
     }
   }
 }
@@ -29,7 +32,10 @@ const performSearch = async () => {
     <button @click="performSearch" class="search-button">Sök</button>
   </div>
 
-  <!-- Add this section to display results -->
+  <div v-if="isLoading" class="loading-spinner">
+    <div class="spinner"></div>
+  </div>
+
   <div class="results-container">
     <div v-for="storeResult in results" :key="storeResult.store">
       <h2>{{ storeResult.store }}</h2>
@@ -37,8 +43,9 @@ const performSearch = async () => {
         <div v-for="product in storeResult.products" :key="product.id" class="product-card">
           <img v-if="product.imageUrl" :src="product.imageUrl" :alt="product.name" />
           <h3>{{ product.name }}</h3>
+          <p class="compare-price">{{ product.comparePrice }}</p>
           <p class="price">{{ product.price }} kr</p>
-          <a :href="product.url" target="_blank" rel="noopener">View Product</a>
+          <a :href="product.url" target="_blank" rel="noopener">Gå till produkten</a>
         </div>
       </div>
     </div>
@@ -49,10 +56,21 @@ const performSearch = async () => {
 .search-container {
   width: 100%;
   max-width: 600px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  margin: 0 auto;
+  padding: 1rem;
   display: flex;
   gap: 0.5rem;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+/* Add padding to the body to prevent content from hiding behind the fixed search bar */
+body {
+  padding-top: 80px;
 }
 
 .search-input {
@@ -93,9 +111,27 @@ const performSearch = async () => {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   margin-top: 1rem;
+}
+
+@media (max-width: 1200px) {
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .product-card {
@@ -113,5 +149,41 @@ const performSearch = async () => {
 .price {
   font-weight: bold;
   color: #42b883;
+}
+
+.compare-price {
+  font-size: 0.8rem;
+  color: #42b883;
+}
+
+.loading-spinner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 1000;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3aa876;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
