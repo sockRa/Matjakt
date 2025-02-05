@@ -4,6 +4,7 @@ import { ref } from 'vue'
 const searchTerm = ref('')
 const results = ref([])
 const isLoading = ref(false)
+const sortBy = ref('')
 
 const performSearch = async () => {
   if (searchTerm.value.length > 2) {
@@ -19,6 +20,31 @@ const performSearch = async () => {
     }
   }
 }
+
+const sortResults = () => {
+  results.value = results.value.map((store) => ({
+    ...store,
+    products: [...store.products].sort((a, b) => {
+      const aPrice = parseFloat(a.price)
+      const bPrice = parseFloat(b.price)
+      const aCompare = parseFloat(a.comparePrice?.replace(/[^0-9,]/g, '').replace(',', '.') || '0')
+      const bCompare = parseFloat(b.comparePrice?.replace(/[^0-9,]/g, '').replace(',', '.') || '0')
+
+      switch (sortBy.value) {
+        case 'price-asc':
+          return aPrice - bPrice
+        case 'price-desc':
+          return bPrice - aPrice
+        case 'compare-asc':
+          return aCompare - bCompare
+        case 'compare-desc':
+          return bCompare - aCompare
+        default:
+          return 0
+      }
+    }),
+  }))
+}
 </script>
 
 <template>
@@ -30,6 +56,13 @@ const performSearch = async () => {
       class="search-input"
     />
     <button @click="performSearch" class="search-button">Sök</button>
+    <select v-model="sortBy" @change="sortResults" class="sort-select">
+      <option value="">Sortera efter...</option>
+      <option value="price-asc">Lägsta pris</option>
+      <option value="price-desc">Högsta pris</option>
+      <option value="compare-asc">Lägsta jämförpris</option>
+      <option value="compare-desc">Högsta jämförpris</option>
+    </select>
   </div>
 
   <div v-if="isLoading" class="loading-spinner">
@@ -111,7 +144,7 @@ body {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(10, 1fr);
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -142,18 +175,21 @@ body {
 }
 
 .product-card img {
-  max-width: 100%;
+  max-width: 100;
   height: auto;
 }
 
 .price {
   font-weight: bold;
+  font-size: 1.2rem;
   color: #42b883;
+  margin: 0.5rem 0;
 }
 
 .compare-price {
-  font-size: 0.8rem;
-  color: #42b883;
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0.25rem 0;
 }
 
 .loading-spinner {
@@ -185,5 +221,19 @@ body {
   100% {
     transform: rotate(360deg);
   }
+}
+
+.sort-select {
+  padding: 0.8rem;
+  font-size: 1.1rem;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  background-color: white;
+  cursor: pointer;
+}
+
+.sort-select:hover {
+  border-color: #3aa876;
 }
 </style>
